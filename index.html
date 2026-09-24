@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAVEN LOADER // Polygenic Audio Stream & Vault</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 3px; }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8); }
+        }
+        .glow-effect { animation: pulse-glow 3s infinite; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 h-full flex flex-col selection:bg-blue-600 selection:text-white">
+
+    <!-- TOP HEADER -->
+    <header class="bg-white border-b border-blue-100 sticky top-0 z-40 backdrop-blur-md bg-opacity-90">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-700 to-blue-400 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                    <i data-lucide="radio" class="w-7 h-7"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="font-extrabold text-2xl tracking-tight text-slate-900">HAVEN <span class="text-blue-600">LOADER</span></h1>
+                        <span class="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Polygenic v3.4</span>
+                    </div>
+                    <p class="text-xs text-slate-500 font-medium">Decentralized Audio Stream & 100-Track Vault</p>
+                </div>
+            </div>
+
+            <!-- Header Actions -->
+            <div class="flex items-center space-x-3">
+                <button onclick="openAdModal()" class="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/20 transition-all cursor-pointer">
+                    <i data-lucide="megaphone" class="w-4 h-4"></i>
+                    <span>Generate Ad</span>
+                </button>
+                <button onclick="generateInfiniteTracks()" class="flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-purple-500/20 transition-all cursor-pointer">
+                    <i data-lucide="zap" class="w-4 h-4"></i>
+                    <span>Generate ∞ Tracks</span>
+                </button>
+                <button onclick="toggleDarkMode()" id="darkModeBtn" class="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition-all cursor-pointer">
+                    <i data-lucide="moon" class="w-4 h-4" id="darkModeIcon"></i>
+                    <span>Dark Mode</span>
+                </button>
+                <button onclick="exportSourceCode()" class="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-slate-900/20 transition-all cursor-pointer">
+                    <i data-lucide="code" class="w-4 h-4"></i>
+                    <span>Download Source</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6 overflow-hidden">
+        
+        <!-- STATS & CONTROLS BAR -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                    <i data-lucide="music" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Catalog Size</p>
+                    <p class="text-2xl font-extrabold text-slate-900" id="catalogSize">100 Tracks</p>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                    <i data-lucide="layers" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Active Genres</p>
+                    <p class="text-2xl font-extrabold text-slate-900">6 Categories</p>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                    <i data-lucide="shield-check" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">System Status</p>
+                    <p class="text-2xl font-extrabold text-blue-600">Online 100%</p>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                    <i data-lucide="download-cloud" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Downloads Vault</p>
+                    <p class="text-2xl font-extrabold text-slate-900" id="totalDownloadsCount">0 Secured</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEARCH & FILTER TOOLBAR -->
+        <div class="bg-white p-4 rounded-2xl border border-blue-100 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div class="relative w-full md:w-96">
+                <i data-lucide="search" class="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400"></i>
+                <input type="text" id="searchInput" oninput="filterTracks()" placeholder="Search tracks by title, artist, genre..." class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-medium">
+            </div>
+
+            <div class="flex items-center space-x-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0" id="genreFilters">
+                <button onclick="setGenre('All')" class="genre-btn bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap">All Tracks</button>
+                <button onclick="setGenre('Favorites')" id="favFilterBtn" class="genre-btn bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap">
+                    <i data-lucide="heart" class="w-3.5 h-3.5 inline-block mr-1"></i>Favorites
+                </button>
+                <button onclick="setGenre('Electronic')" class="genre-btn bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap">Electronic</button>
+                <button onclick="setGenre('Ambient')" class="genre-btn bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap">Ambient</button>
+                <button onclick="setGenre('Lo-Fi')" class="genre-btn bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap">Lo-Fi</button>
+                <button onclick="setGenre('Synthwave')" class="genre-btn bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap">Synthwave</button>
+                <button onclick="setGenre('Cinematic')" class="genre-btn bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap">Cinematic</button>
+                <button onclick="setGenre('Acoustic')" class="genre-btn bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap">Acoustic</button>
+                <button onclick="setGenre('Vocal')" class="genre-btn bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap">Vocal</button>
+                <button onclick="setGenre('Experimental')" class="genre-btn bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap">Experimental</button>
+                <button onclick="setGenre('Drone')" class="genre-btn bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap">Drone</button>
+                <button onclick="setGenre('Psybient')" class="genre-btn bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap">Psybient</button>
+            </div>
+        </div>
+
+        <!-- TRACK LIST TABLE / GRID CONTAINER -->
+        <div class="bg-white rounded-2xl border border-blue-100 shadow-sm flex-1 overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Track Catalog (#001 - #<span id="maxTrackId">100</span>)</span>
+                <span class="text-xs font-semibold text-blue-600" id="trackCountDisplay">Showing 100 tracks</span>
+            </div>
+            
+            <div class="overflow-y-auto flex-1 p-4" id="trackListContainer">
+                <!-- Dynamically Injected Tracks -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FLOATING AUDIO PLAYER BAR -->
+    <div id="audioPlayerBar" class="bg-slate-900 text-white border-t border-slate-800 p-4 shadow-2xl transition-all duration-300 hidden">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-4 w-full md:w-1/3">
+                <div id="playerThumb" class="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30">
+                    <i data-lucide="disc" class="w-6 h-6 animate-spin"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <h4 id="playerTitle" class="font-bold text-sm truncate text-white">Select a Track</h4>
+                    <p id="playerArtist" class="text-xs text-slate-400 truncate">Haven Audio Vault</p>
+                </div>
+            </div>
+
+            <!-- Player Controls -->
+            <div class="flex flex-col items-center w-full md:w-1/3 space-y-1">
+                <div class="flex items-center space-x-4">
+                    <button onclick="playPrev()" class="p-2 text-slate-400 hover:text-white transition-colors cursor-pointer" title="Previous">
+                        <i data-lucide="skip-back" class="w-5 h-5"></i>
+                    </button>
+                    <button onclick="togglePlay()" id="playPauseBtn" class="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-500 flex items-center justify-center text-white shadow-md shadow-blue-500/40 transition-all cursor-pointer">
+                        <i data-lucide="play" class="w-5 h-5 ml-0.5"></i>
+                    </button>
+                    <button onclick="playNext()" class="p-2 text-slate-400 hover:text-white transition-colors cursor-pointer" title="Next">
+                        <i data-lucide="skip-forward" class="w-5 h-5"></i>
+                    </button>
+                    <button onclick="toggleShuffle()" id="shuffleBtn" class="p-2 text-slate-500 hover:text-purple-400 transition-colors cursor-pointer" title="Shuffle">
+                        <i data-lucide="shuffle" class="w-5 h-5"></i>
+                    </button>
+                    <button onclick="toggleRepeat()" id="repeatBtn" class="p-2 text-slate-500 hover:text-purple-400 transition-colors cursor-pointer" title="Repeat">
+                        <i data-lucide="repeat" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="w-full flex items-center space-x-2 text-xs text-slate-400 font-mono">
+                    <span id="currentTime">0:00</span>
+                    <input type="range" id="progressBar" value="0" max="100" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                    <span id="totalDuration">3:30</span>
+                </div>
+            </div>
+
+            <!-- Volume & Actions -->
+            <div class="flex items-center justify-end space-x-4 w-full md:w-1/3">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="volume-2" class="w-4 h-4 text-slate-400"></i>
+                    <input type="range" min="0" max="1" step="0.05" value="1" oninput="adjustVolume(this.value)" class="w-20 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                </div>
+                <button onclick="exportCatalog()" class="px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 rounded-lg transition-colors cursor-pointer">Export JSON</button>
+                <button onclick="closePlayer()" class="text-slate-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AD CREATOR MODAL -->
+    <div id="adModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-blue-100 flex flex-col space-y-4 animate-in fade-in zoom-in duration-200">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                        <i data-lucide="megaphone" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-lg text-slate-900">Sponsored Ad Studio</h3>
+                        <p class="text-xs text-slate-500">Create & inject custom ad units into the Haven network</p>
+                    </div>
+                </div>
+                <button onclick="closeAdModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 py-2">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Advertiser / Brand Name</label>
+                    <input type="text" id="adBrand" placeholder="e.g. Polygenic Tech Labs" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-medium">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Ad Headline & Message</label>
+                    <textarea id="adText" rows="3" placeholder="Discover next-gen audio gear with 50% discount..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-medium"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Target Action Link / URL</label>
+                    <input type="text" id="adUrl" placeholder="https://example.com/promo" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-medium">
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+                <button onclick="closeAdModal()" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer">Cancel</button>
+                <button onclick="submitNewAd()" class="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-500/20 transition-all cursor-pointer">Publish Ad Unit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AD WATCH / REWARD GATE MODAL -->
+    <div id="rewardAdModal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-blue-100 flex flex-col space-y-5 text-center">
+            <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto shadow-lg shadow-blue-500/20">
+                <i data-lucide="play-circle" class="w-8 h-8 animate-pulse"></i>
+            </div>
+            <div>
+                <span class="text-xs font-bold uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Sponsored Ad Gateway</span>
+                <h3 id="rewardAdTitle" class="font-extrabold text-xl text-slate-900 mt-2">Polygenic Audio Partner</h3>
+                <p id="rewardAdDesc" class="text-xs text-slate-500 mt-1">Support the creator & unlock instantaneous high-speed WAV/MP3 download link.</p>
+            </div>
+
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left">
+                <div class="flex items-center justify-between text-xs text-slate-500 font-mono mb-2">
+                    <span>Ad Simulation progress</span>
+                    <span id="adTimerText">5s remaining</span>
+                </div>
+                <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                    <div id="adProgressBar" class="bg-blue-600 h-full w-0 transition-all duration-1000"></div>
+                </div>
+            </div>
+
+            <button id="claimDownloadBtn" disabled onclick="completeAdAndDownload()" class="w-full py-3 rounded-xl text-sm font-bold text-white bg-slate-300 cursor-not-allowed transition-all shadow-none">
+                Please wait for ad to finish...
+            </button>
+            <button onclick="closeRewardModal()" class="text-xs text-slate-400 hover:text-slate-600 font-semibold cursor-pointer">Cancel Download</button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // 100 Song Database Generation
+        const genres = ['Electronic', 'Ambient', 'Lo-Fi', 'Synthwave', 'Cinematic', 'Acoustic'];
+        const artistPrefixes = ['Aether', 'Neon', 'Quantum', 'Solar', 'Echo', 'Cyber', 'Astral', 'Horizon', 'Vortex', 'Krypton'];
+        const trackAdjectives = ['Midnight', 'Golden', 'Infinite', 'Forgotten', 'Electric', 'Silent', 'Cosmic', 'Stellar', 'Prismatic', 'Neo'];
+        const trackNouns = ['Pulse', 'Horizon', 'Memory', 'Wave', 'Journey', 'Echo', 'Spectrum', 'Gravity', 'State', 'Dream'];
+
+        let tracks = [];
+        let customAds = [
+            { brand: 'Polygenic Labs', text: 'Accelerate your Next.js & FastAPI backend workflows with AI assistance.', url: 'https://github.com' },
+            { brand: 'Forest Haven 3000', text: 'Explore the global 3,000 species insect database and monograph explorer.', url: '#' }
+        ];
+
+        let currentGenre = 'All';
+        let searchQuery = '';
+        let totalDownloads = 0;
+        let activeTrackForDownload = null;
+        let darkMode = false;
+        let favorites = new Set();
+
+        // Audio Player State
+        let currentAudio = new Audio();
+        let isPlaying = false;
+        let currentPlayingTrackId = null;
+        let shuffleMode = false;
+        let repeatMode = false; // 0=off, 1=all, 2=one
+        let playHistory = [];
+        let filteredTrackIds = [];
+
+        // Generate 100 tracks
+        function generateTracks() {
+            for (let i = 1; i <= 100; i++) {
+                const genre = genres[(i - 1) % genres.length];
+                const artist = `${artistPrefixes[i % artistPrefixes.length]} ${['Sound', 'Labs', 'Project', 'Collective', 'Wave'][i % 5]}`;
+                const title = `${trackAdjectives[i % trackAdjectives.length]} ${trackNouns[(i * 3) % trackNouns.length]} #${i}`;
+                const durationSecs = 180 + (i * 7) % 150; // Between 3 to 5.5 mins
+                const minutes = Math.floor(durationSecs / 60);
+                const seconds = durationSecs % 60;
+                const durationFormatted = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                const fileSize = (3.5 + (i % 4) * 1.2).toFixed(1) + ' MB';
+                const bitrate = [192, 256, 320][i % 3] + ' kbps';
+
+                // Use reliable free audio samples for preview
+                const sampleAudios = [
+                    'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+                    'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+                    'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+                    'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'
+                ];
+
+                tracks.push({
+                    id: i,
+                    title: title,
+                    artist: artist,
+                    genre: genre,
+                    duration: durationFormatted,
+                    fileSize: fileSize,
+                    bitrate: bitrate,
+                    audioUrl: sampleAudios[i % sampleAudios.length]
+                });
+            }
+        }
+
+        generateTracks();
+
+        // Web Audio Synth Engine for procedural voice-like audio
+        let audioCtx = null;
+        const voiceCache = new Map();
+
+        function getAudioContext() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        // Formant frequencies for vowel-like sounds (F1, F2, F3)
+        const vowelFormants = {
+            a: [730, 1090, 2440],  // "ah"
+            e: [530, 1840, 2480],  // "eh"
+            i: [270, 2290, 3010],  // "ee"
+            o: [570, 840, 2410],   // "oh"
+            u: [300, 870, 2240],   // "oo"
+            ai: [660, 1720, 2410], // "eye"
+            ei: [460, 1900, 2550], // "ay"
+        };
+
+        function createVoiceBuffer(duration = 3.5, seed = 1) {
+            const cacheKey = `${duration}_${seed}`;
+            if (voiceCache.has(cacheKey)) return voiceCache.get(cacheKey);
+
+            const ctx = getAudioContext();
+            const sampleRate = ctx.sampleRate;
+            const length = sampleRate * duration;
+            const buffer = ctx.createBuffer(1, length, sampleRate);
+            const data = buffer.getChannelData(0);
+
+            // Deterministic random from seed
+            let randSeed = seed;
+            const rand = () => {
+                randSeed = (randSeed * 1664525 + 1013904223) >>> 0;
+                return randSeed / 0x100000000;
+            };
+
+            // Pick vowel formants
+            const vowels = Object.values(vowelFormants);
+            const v = vowels[Math.floor(rand() * vowels.length)];
+            const [f1, f2, f3] = v;
+
+            // Fundamental frequency (pitch) - varies per track
+            const f0 = 80 + rand() * 120; // 80-200 Hz
+
+            // Formant bandwidths
+            const bw1 = 50 + rand() * 30;
+            const bw2 = 80 + rand() * 40;
+            const bw3 = 120 + rand() * 50;
+
+            // IIR filter coefficients for formants (resonant bandpass)
+            function formantCoeffs(freq, bw) {
+                const R = Math.exp(-Math.PI * bw / sampleRate);
+                const cos = Math.cos(2 * Math.PI * freq / sampleRate);
+                const a1 = -2 * R * cos;
+                const a2 = R * R;
+                const b0 = (1 - R * R) / 2;
+                return { b0, a1, a2 };
+            }
+
+            const F1 = formantCoeffs(f1, bw1);
+            const F2 = formantCoeffs(f2, bw2);
+            const F3 = formantCoeffs(f3, bw3);
+
+            // Filter state
+            let x1_1 = 0, x1_2 = 0, y1_1 = 0, y1_2 = 0;
+            let x2_1 = 0, x2_2 = 0, y2_1 = 0, y2_2 = 0;
+            let x3_1 = 0, x3_2 = 0, y3_1 = 0, y3_2 = 0;
+
+            // Glottal pulse generator (simplified LF model)
+            let phase = 0;
+            const phaseInc = f0 / sampleRate;
+            let pulsePhase = 0;
+            const pulseWidth = 0.4; // duty cycle
+
+            // Noise for breathiness
+            let noiseState = seed;
+
+            // Envelope
+            const attackTime = 0.05 * sampleRate;
+            const releaseTime = 0.3 * sampleRate;
+            const sustainLevel = 0.7;
+
+            for (let i = 0; i < length; i++) {
+                // Envelope
+                let env;
+                if (i < attackTime) env = i / attackTime;
+                else if (i > length - releaseTime) env = (length - i) / releaseTime * sustainLevel;
+                else env = sustainLevel;
+
+                // Glottal pulse (bandlimited impulse train approximation)
+                pulsePhase += phaseInc;
+                if (pulsePhase >= 1) pulsePhase -= 1;
+                let pulse = 0;
+                if (pulsePhase < pulseWidth) {
+                    const t = pulsePhase / pulseWidth;
+                    pulse = Math.sin(Math.PI * t) * (1 - Math.cos(2 * Math.PI * t * 2)) * 0.5;
+                }
+
+                // Add breathiness noise
+                noiseState = (noiseState * 1664525 + 1013904223) >>> 0;
+                const noise = (noiseState / 0x100000000) * 2 - 1;
+                const source = pulse * 0.8 + noise * 0.15 * (1 - pulseWidth);
+
+                // Formant filtering cascade
+                // F1
+                const y1 = F1.b0 * (source - x1_2) - F1.a1 * y1_1 - F1.a2 * y1_2;
+                x1_2 = x1_1; x1_1 = source; y1_2 = y1_1; y1_1 = y1;
+
+                // F2
+                const y2 = F2.b0 * (y1 - x2_2) - F2.a1 * y2_1 - F2.a2 * y2_2;
+                x2_2 = x2_1; x2_1 = y1; y2_2 = y2_1; y2_1 = y2;
+
+                // F3
+                const y3 = F3.b0 * (y2 - x3_2) - F3.a1 * y3_1 - F3.a2 * y3_2;
+                x3_2 = x3_1; x3_1 = y2; y3_2 = y3_1; y3_1 = y3;
+
+                data[i] = y3 * env * 0.3;
+            }
+
+            voiceCache.set(cacheKey, buffer);
+            return buffer;
+        }
+
+        function playSynthTrack(track) {
+            const ctx = getAudioContext();
+            if (ctx.state === 'suspended') ctx.resume();
+
+            const buffer = createVoiceBuffer(track.durationSecs, track.id);
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            
+            const gain = ctx.createGain();
+            gain.gain.value = 0.5;
+            
+            source.connect(gain).connect(ctx.destination);
+            source.start(0);
+            
+            const player = { source, gain, stop: () => source.stop() };
+            
+            source.onended = () => {
+                handleTrackEnd();
+            };
+            
+            return player;
+        }
+
+        function handleTrackEnd() {
+            if (repeatMode === 2) {
+                // Repeat One
+                playTrack(currentPlayingTrackId);
+            } else if (repeatMode === 1 || filteredTrackIds.length > 1) {
+                // Repeat All or normal playlist
+                playNext();
+            } else {
+                // Stop at end
+                isPlaying = false;
+                updatePlayPauseIcon();
+                renderTracks();
+            }
+        }
+
+        // Generate infinite tracks (up to 10M metadata entries)
+        function generateInfiniteTracks(count = 10000) {
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Generating...</span>';
+            btn.disabled = true;
+            lucide.createIcons();
+
+            // Use requestAnimationFrame batches to avoid blocking UI
+            const batchSize = 500;
+            let generated = tracks.length;
+            const targetTotal = Math.min(generated + count, 10000000);
+
+            const genres = ['Electronic', 'Ambient', 'Lo-Fi', 'Synthwave', 'Cinematic', 'Acoustic', 'Vocal', 'Experimental', 'Drone', 'Psybient'];
+            const artistPrefixes = ['Aether', 'Neon', 'Quantum', 'Solar', 'Echo', 'Cyber', 'Astral', 'Horizon', 'Vortex', 'Krypton', 'Lunar', 'Solaris', 'Nebula', 'Prism', 'Vertex'];
+            const trackAdjectives = ['Midnight', 'Golden', 'Infinite', 'Forgotten', 'Electric', 'Silent', 'Cosmic', 'Stellar', 'Prismatic', 'Neo', 'Void', 'Ethereal', 'Radiant', 'Obsidian', 'Luminous'];
+            const trackNouns = ['Pulse', 'Horizon', 'Memory', 'Wave', 'Journey', 'Echo', 'Spectrum', 'Gravity', 'State', 'Dream', 'Signal', 'Flux', 'Resonance', 'Vector', 'Field'];
+
+            function batch() {
+                const end = Math.min(generated + batchSize, targetTotal);
+                for (let i = generated + 1; i <= end; i++) {
+                    const genre = genres[(i - 1) % genres.length];
+                    const artist = `${artistPrefixes[i % artistPrefixes.length]} ${['Sound', 'Labs', 'Project', 'Collective', 'Wave', 'Systems', 'Dynamics', 'Fields'][i % 8]}`;
+                    const title = `${trackAdjectives[i % trackAdjectives.length]} ${trackNouns[(i * 7) % trackNouns.length]} #${i}`;
+                    const durationSecs = 120 + (i * 13) % 300; // 2-7 mins
+                    const minutes = Math.floor(durationSecs / 60);
+                    const seconds = durationSecs % 60;
+                    const durationFormatted = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                    const fileSize = (2.5 + (i % 6) * 1.5).toFixed(1) + ' MB';
+                    const bitrate = [128, 192, 256, 320][i % 4] + ' kbps';
+
+                    tracks.push({
+                        id: i,
+                        title: title,
+                        artist: artist,
+                        genre: genre,
+                        duration: durationFormatted,
+                        durationSecs: durationSecs,
+                        fileSize: fileSize,
+                        bitrate: bitrate,
+                        isSynth: true // Mark as procedural
+                    });
+                }
+                generated = end;
+
+                if (generated < targetTotal) {
+                    requestAnimationFrame(batch);
+                } else {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    lucide.createIcons();
+                    renderTracks();
+                    alert(`Generated ${targetTotal - tracks.length + generated} new tracks! Total: ${tracks.length.toLocaleString()}`);
+                }
+            }
+
+            requestAnimationFrame(batch);
+        }
+
+        // Render Track List
+        function renderTracks() {
+            const container = document.getElementById('trackListContainer');
+            container.innerHTML = '';
+
+            const filtered = tracks.filter(t => {
+                const matchesGenre = currentGenre === 'All' || 
+                                    (currentGenre === 'Favorites' && favorites.has(t.id)) ||
+                                    t.genre === currentGenre;
+                const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                      t.artist.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                      t.genre.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesGenre && matchesSearch;
+            });
+
+            document.getElementById('trackCountDisplay').innerText = `Showing ${filtered.length} of ${tracks.length.toLocaleString()} tracks`;
+            document.getElementById('catalogSize').innerText = `${tracks.length.toLocaleString()} Tracks`;
+            document.getElementById('maxTrackId').innerText = tracks.length;
+
+            // Update filtered track IDs for navigation
+            filteredTrackIds = filtered.map(t => t.id);
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-16 text-slate-400">
+                        <i data-lucide="search-x" class="w-12 h-12 mb-2 text-slate-300"></i>
+                        <p class="font-semibold text-sm">No audio tracks matched your query.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            filtered.forEach(track => {
+                const isCurrent = currentPlayingTrackId === track.id;
+                const row = document.createElement('div');
+                row.className = `flex items-center justify-between p-3.5 rounded-xl transition-all border ${isCurrent ? 'bg-blue-50/80 border-blue-200 shadow-sm' : 'hover:bg-slate-50 border-transparent'} group`;
+                
+                row.innerHTML = `
+                    <div class="flex items-center space-x-4 min-w-0">
+                        <button onclick="playTrack(${track.id})" class="w-10 h-10 rounded-xl ${isCurrent && isPlaying ? 'bg-blue-600 text-white' : 'bg-slate-100 group-hover:bg-blue-600 group-hover:text-white text-slate-700'} flex items-center justify-center transition-all shadow-sm shrink-0 cursor-pointer">
+                            <i data-lucide="${isCurrent && isPlaying ? 'pause' : 'play'}" class="w-4 h-4 ml-0.5"></i>
+                        </button>
+                        <div class="min-w-0">
+                            <div class="flex items-center space-x-2">
+                                <h4 class="font-bold text-sm text-slate-900 truncate">${track.title}</h4>
+                                <span class="text-[10px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-full shrink-0">${track.genre}</span>
+                                ${track.isSynth ? '<span class="text-[10px] bg-purple-100 text-purple-700 font-semibold px-2 py-0.5 rounded-full shrink-0">SYNTH</span>' : ''}
+                            </div>
+                            <p class="text-xs text-slate-500 truncate">${track.artist} • ${track.bitrate} • ${track.fileSize}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2 shrink-0">
+                        <span class="text-xs text-slate-400 font-mono hidden sm:inline">${track.duration}</span>
+                        <button onclick="toggleFavorite(${track.id}, event)" class="p-2 rounded-lg transition-colors cursor-pointer ${favorites.has(track.id) ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'}" title="Toggle Favorite">
+                            <i data-lucide="heart" class="w-4 h-4 ${favorites.has(track.id) ? 'fill-current' : ''}"></i>
+                        </button>
+                        <button onclick="triggerRewardAd(${track.id})" class="flex items-center space-x-1.5 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer">
+                            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                            <span class="hidden sm:inline">Download</span>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+
+            lucide.createIcons();
+        }
+
+        // Search & Filter
+        function filterTracks() {
+            searchQuery = document.getElementById('searchInput').value;
+            renderTracks();
+        }
+
+        function setGenre(genre) {
+            currentGenre = genre;
+            document.querySelectorAll('.genre-btn').forEach(btn => {
+                const isActive = (genre === 'All' && btn.innerText.includes('All')) ||
+                                 (genre === 'Favorites' && btn.id === 'favFilterBtn') ||
+                                 btn.innerText.toLowerCase().includes(genre.toLowerCase());
+                if (isActive) {
+                    btn.className = 'genre-btn bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap';
+                } else {
+                    btn.className = 'genre-btn bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap';
+                }
+            });
+            renderTracks();
+        }
+
+        function toggleFavorite(id, e) {
+            e.stopPropagation();
+            if (favorites.has(id)) {
+                favorites.delete(id);
+            } else {
+                favorites.add(id);
+            }
+            renderTracks();
+        }
+
+        // Audio Player Controls
+        let synthPlayer = null;
+
+        function playTrack(id) {
+            const track = tracks.find(t => t.id === id);
+            if (!track) return;
+
+            if (currentPlayingTrackId === id) {
+                if (isPlaying) {
+                    if (track.isSynth && synthPlayer) {
+                        synthPlayer.stop();
+                    } else {
+                        currentAudio.pause();
+                    }
+                    isPlaying = false;
+                } else {
+                    if (track.isSynth) {
+                        synthPlayer = playSynthTrack(track);
+                    } else {
+                        currentAudio.play();
+                    }
+                    isPlaying = true;
+                }
+            } else {
+                // Stop previous
+                if (synthPlayer) { synthPlayer.stop(); synthPlayer = null; }
+                currentAudio.pause();
+
+                if (track.isSynth) {
+                    synthPlayer = playSynthTrack(track);
+                    isPlaying = true;
+                    currentPlayingTrackId = id;
+                } else {
+                    currentAudio.src = track.audioUrl;
+                    currentAudio.play();
+                    isPlaying = true;
+                    currentPlayingTrackId = id;
+                }
+
+                document.getElementById('audioPlayerBar').classList.remove('hidden');
+                document.getElementById('playerTitle').innerText = track.title;
+                document.getElementById('playerArtist').innerText = `${track.artist} • ${track.genre} ${track.isSynth ? '• SYNTH' : ''}`;
+
+                // Add to history
+                playHistory.push(id);
+                if (playHistory.length > 50) playHistory.shift();
+            }
+            updatePlayPauseIcon();
+            renderTracks();
+        }
+
+        function getCurrentIndex() {
+            return filteredTrackIds.indexOf(currentPlayingTrackId);
+        }
+
+        function playNext() {
+            if (filteredTrackIds.length === 0) return;
+            let idx = getCurrentIndex();
+            if (idx === -1) idx = 0;
+            
+            if (shuffleMode) {
+                idx = Math.floor(Math.random() * filteredTrackIds.length);
+            } else {
+                idx = (idx + 1) % filteredTrackIds.length;
+            }
+            playTrack(filteredTrackIds[idx]);
+        }
+
+        function playPrev() {
+            if (filteredTrackIds.length === 0) return;
+            let idx = getCurrentIndex();
+            if (idx <= 0) idx = filteredTrackIds.length - 1;
+            else idx = idx - 1;
+            playTrack(filteredTrackIds[idx]);
+        }
+
+        function toggleShuffle() {
+            shuffleMode = !shuffleMode;
+            document.getElementById('shuffleBtn').classList.toggle('text-purple-400', shuffleMode);
+            document.getElementById('shuffleBtn').classList.toggle('text-slate-500', !shuffleMode);
+        }
+
+        function toggleRepeat() {
+            repeatMode = (repeatMode + 1) % 3;
+            const btn = document.getElementById('repeatBtn');
+            btn.classList.remove('text-slate-500', 'text-purple-400', 'text-blue-400');
+            if (repeatMode === 1) btn.classList.add('text-purple-400');
+            else if (repeatMode === 2) btn.classList.add('text-blue-400');
+            else btn.classList.add('text-slate-500');
+            btn.title = ['Repeat Off', 'Repeat All', 'Repeat One'][repeatMode];
+        }
+
+        function updatePlayPauseIcon() {
+            const btn = document.getElementById('playPauseBtn');
+            const icon = btn.querySelector('i');
+            if (icon) {
+                icon.setAttribute('data-lucide', isPlaying ? 'pause' : 'play');
+                lucide.createIcons();
+            }
+        }
+
+        function exportCatalog() {
+            const data = {
+                version: '3.4',
+                generated: new Date().toISOString(),
+                totalTracks: tracks.length,
+                tracks: tracks.map(t => ({
+                    id: t.id,
+                    title: t.title,
+                    artist: t.artist,
+                    genre: t.genre,
+                    duration: t.duration,
+                    durationSecs: t.durationSecs,
+                    fileSize: t.fileSize,
+                    bitrate: t.bitrate,
+                    isSynth: t.isSynth || false
+                }))
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `haven-loader-catalog-${tracks.length}-tracks.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function toggleDarkMode() {
+            darkMode = !darkMode;
+            document.body.classList.toggle('bg-slate-50', !darkMode);
+            document.body.classList.toggle('bg-slate-950', darkMode);
+            document.body.classList.toggle('text-slate-900', !darkMode);
+            document.body.classList.toggle('text-slate-100', darkMode);
+            
+            const icon = document.getElementById('darkModeIcon');
+            const btn = document.getElementById('darkModeBtn');
+            if (darkMode) {
+                icon.setAttribute('data-lucide', 'sun');
+                btn.classList.remove('bg-slate-100', 'hover:bg-slate-200', 'text-slate-700');
+                btn.classList.add('bg-slate-800', 'hover:bg-slate-700', 'text-slate-300');
+            } else {
+                icon.setAttribute('data-lucide', 'moon');
+                btn.classList.remove('bg-slate-800', 'hover:bg-slate-700', 'text-slate-300');
+                btn.classList.add('bg-slate-100', 'hover:bg-slate-200', 'text-slate-700');
+            }
+            lucide.createIcons();
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            switch(e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    togglePlay();
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    playNext();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    playPrev();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    adjustVolume(Math.min(1, currentAudio.volume + 0.1));
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    adjustVolume(Math.max(0, currentAudio.volume - 0.1));
+                    break;
+                case 'KeyS':
+                    toggleShuffle();
+                    break;
+                case 'KeyR':
+                    toggleRepeat();
+                    break;
+                case 'KeyM':
+                    adjustVolume(0);
+                    break;
+                case 'KeyD':
+                    toggleDarkMode();
+                    break;
+            }
+        });
+
+        function togglePlay() {
+            if (!currentPlayingTrackId) {
+                playTrack(filteredTrackIds[0] || 1);
+                return;
+            }
+            const track = tracks.find(t => t.id === currentPlayingTrackId);
+            if (isPlaying) {
+                if (track?.isSynth && synthPlayer) {
+                    synthPlayer.stop();
+                } else {
+                    currentAudio.pause();
+                }
+                isPlaying = false;
+            } else {
+                if (track?.isSynth) {
+                    synthPlayer = playSynthTrack(track);
+                } else {
+                    currentAudio.play();
+                }
+                isPlaying = true;
+            }
+            updatePlayPauseIcon();
+            renderTracks();
+        }
+
+        function closePlayer() {
+            if (synthPlayer) { synthPlayer.stop(); synthPlayer = null; }
+            currentAudio.pause();
+            isPlaying = false;
+            currentPlayingTrackId = null;
+            document.getElementById('audioPlayerBar').classList.add('hidden');
+            renderTracks();
+        }
+
+        function adjustVolume(val) {
+            currentAudio.volume = val;
+        }
+
+        currentAudio.addEventListener('ended', () => {
+            handleTrackEnd();
+        });
+
+        currentAudio.addEventListener('timeupdate', () => {
+            const track = tracks.find(t => t.id === currentPlayingTrackId);
+            if (track?.isSynth) return; // Synth tracks don't emit timeupdate
+            
+            if (currentAudio.duration) {
+                const progress = (currentAudio.currentTime / currentAudio.duration) * 100;
+                document.getElementById('progressBar').value = progress;
+                
+                const curM = Math.floor(currentAudio.currentTime / 60);
+                const curS = Math.floor(currentAudio.currentTime % 60);
+                document.getElementById('currentTime').innerText = `${curM}:${curS < 10 ? '0' : ''}${curS}`;
+
+                const totM = Math.floor(currentAudio.duration / 60);
+                const totS = Math.floor(currentAudio.duration % 60);
+                document.getElementById('totalDuration').innerText = `${totM}:${totS < 10 ? '0' : ''}${totS}`;
+            }
+        });
+
+        document.getElementById('progressBar').addEventListener('input', (e) => {
+            const track = tracks.find(t => t.id === currentPlayingTrackId);
+            if (track?.isSynth) return;
+            if (currentAudio.duration) {
+                currentAudio.currentTime = (e.target.value / 100) * currentAudio.duration;
+            }
+        });
+
+        // Ad Creator Modal
+        function openAdModal() {
+            document.getElementById('adModal').classList.remove('hidden');
+            document.getElementById('adModal').classList.add('flex');
+        }
+
+        function closeAdModal() {
+            document.getElementById('adModal').classList.remove('flex');
+            document.getElementById('adModal').classList.add('hidden');
+        }
+
+        function submitNewAd() {
+            const brand = document.getElementById('adBrand').value.trim();
+            const text = document.getElementById('adText').value.trim();
+            const url = document.getElementById('adUrl').value.trim();
+
+            if (!brand || !text) {
+                alert('Please provide at least a brand name and ad text.');
+                return;
+            }
+
+            customAds.push({ brand, text, url: url || '#' });
+            alert('Successfully created and published ad unit to the Haven network!');
+            document.getElementById('adBrand').value = '';
+            document.getElementById('adText').value = '';
+            document.getElementById('adUrl').value = '';
+            closeAdModal();
+        }
+
+        // Reward Ad Download Flow
+        function triggerRewardAd(id) {
+            activeTrackForDownload = tracks.find(t => t.id === id);
+            if (!activeTrackForDownload) return;
+
+            // Pick random ad
+            const randomAd = customAds[Math.floor(Math.random() * customAds.length)];
+            document.getElementById('rewardAdTitle').innerText = randomAd.brand;
+            document.getElementById('rewardAdDesc').innerText = randomAd.text;
+
+            document.getElementById('rewardAdModal').classList.remove('hidden');
+            document.getElementById('rewardAdModal').classList.add('flex');
+
+            // Simulate Ad timer
+            let timeLeft = 5;
+            const timerText = document.getElementById('adTimerText');
+            const progressBar = document.getElementById('adProgressBar');
+            const claimBtn = document.getElementById('claimDownloadBtn');
+
+            progressBar.style.width = '0%';
+            claimBtn.disabled = true;
+            claimBtn.className = 'w-full py-3 rounded-xl text-sm font-bold text-white bg-slate-300 cursor-not-allowed transition-all shadow-none';
+            claimBtn.innerText = `Please watch ad (${timeLeft}s)...`;
+
+            const countdown = setInterval(() => {
+                timeLeft--;
+                timerText.innerText = `${timeLeft}s remaining`;
+                progressBar.style.width = `${((5 - timeLeft) / 5) * 100}%`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdown);
+                    timerText.innerText = 'Ad completed!';
+                    claimBtn.disabled = false;
+                    claimBtn.className = 'w-full py-3 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-500/20 transition-all cursor-pointer';
+                    claimBtn.innerText = `Unlock & Download ${activeTrackForDownload.title}`;
+                }
+            }, 1000);
+        }
+
+        function closeRewardModal() {
+            document.getElementById('rewardAdModal').classList.remove('flex');
+            document.getElementById('rewardAdModal').classList.add('hidden');
+            activeTrackForDownload = null;
+        }
+
+        function completeAdAndDownload() {
+            if (!activeTrackForDownload) return;
+
+            totalDownloads++;
+            document.getElementById('totalDownloadsCount').innerText = `${totalDownloads} Secured`;
+
+            // Trigger file download simulation
+            const element = document.createElement('a');
+            const fileContent = `HAVEN LOADER SECURED AUDIO FILE\nTitle: ${activeTrackForDownload.title}\nArtist: ${activeTrackForDownload.artist}\nGenre: ${activeTrackForDownload.genre}\nBitrate: ${activeTrackForDownload.bitrate}\n\nThank you for using Haven Loader Polygenic Vault.`;
+            const file = new Blob([fileContent], { type: 'text/plain' });
+            element.href = URL.createObjectURL(file);
+            element.download = `${activeTrackForDownload.title.replace(/\s+/g, '_')}_HavenLoader.mp3`;
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+
+            closeRewardModal();
+        }
+
+        // Export Source Code
+        function exportSourceCode() {
+            const htmlContent = document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'index.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // Initial render
+        renderTracks();
+    </script>
+</body>
+</html>
