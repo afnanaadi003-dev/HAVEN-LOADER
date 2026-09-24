@@ -141,6 +141,18 @@
             <div class="overflow-y-auto flex-1 p-4" id="trackListContainer">
                 <!-- Dynamically Injected Tracks -->
             </div>
+            <!-- Pagination Bar (virtualized for 10M catalog) -->
+            <div id="paginationBar" class="px-6 py-3 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between text-xs shrink-0">
+                <span id="pageInfo" class="font-semibold text-slate-600">Page 1</span>
+                <div class="flex items-center space-x-2">
+                    <button onclick="goToPage(currentPage-1)" id="prevPageBtn" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Prev</button>
+                    <span id="pageJumpWrap" class="flex items-center space-x-1">
+                        <input id="pageJumpInput" type="number" min="1" placeholder="Page" class="w-20 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-medium focus:outline-none focus:border-blue-500" onkeydown="if(event.key==='Enter') jumpToPage()">
+                        <button onclick="jumpToPage()" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white hover:bg-slate-800 font-semibold cursor-pointer">Go</button>
+                    </span>
+                    <button onclick="goToPage(currentPage+1)" id="nextPageBtn" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
+                </div>
+            </div>
         </div>
 
     </main>
@@ -272,13 +284,18 @@
         // Initialize Lucide Icons
         lucide.createIcons();
 
-        // 100 Song Database Generation
-        const genres = ['Electronic', 'Ambient', 'Lo-Fi', 'Synthwave', 'Cinematic', 'Acoustic'];
-        const artistPrefixes = ['Aether', 'Neon', 'Quantum', 'Solar', 'Echo', 'Cyber', 'Astral', 'Horizon', 'Vortex', 'Krypton'];
-        const trackAdjectives = ['Midnight', 'Golden', 'Infinite', 'Forgotten', 'Electric', 'Silent', 'Cosmic', 'Stellar', 'Prismatic', 'Neo'];
-        const trackNouns = ['Pulse', 'Horizon', 'Memory', 'Wave', 'Journey', 'Echo', 'Spectrum', 'Gravity', 'State', 'Dream'];
+        // === 10 MILLION Song Virtual Catalog (layout unchanged, no DOM bloat) ===
+        const GENRES = ['Electronic', 'Ambient', 'Lo-Fi', 'Synthwave', 'Cinematic', 'Acoustic', 'Vocal', 'Experimental', 'Drone', 'Psybient'];
+        const genres = GENRES; // keep legacy name
+        const artistPrefixes = ['Aether', 'Neon', 'Quantum', 'Solar', 'Echo', 'Cyber', 'Astral', 'Horizon', 'Vortex', 'Krypton', 'Lunar', 'Solaris', 'Nebula', 'Prism', 'Vertex'];
+        const artistSuffixes = ['Sound', 'Labs', 'Project', 'Collective', 'Wave', 'Systems', 'Dynamics', 'Fields'];
+        const trackAdjectives = ['Midnight', 'Golden', 'Infinite', 'Forgotten', 'Electric', 'Silent', 'Cosmic', 'Stellar', 'Prismatic', 'Neo', 'Void', 'Ethereal', 'Radiant', 'Obsidian', 'Luminous'];
+        const trackNouns = ['Pulse', 'Horizon', 'Memory', 'Wave', 'Journey', 'Echo', 'Spectrum', 'Gravity', 'State', 'Dream', 'Signal', 'Flux', 'Resonance', 'Vector', 'Field'];
+        const TOTAL_TRACKS = 10000000;
+        const PAGE_SIZE = 100;
+        let currentPage = 1;
+        let filteredTotal = TOTAL_TRACKS;
 
-        let tracks = [];
         let customAds = [
             { brand: 'Polygenic Labs', text: 'Accelerate your Next.js & FastAPI backend workflows with AI assistance.', url: 'https://github.com' },
             { brand: 'Forest Haven 3000', text: 'Explore the global 3,000 species insect database and monograph explorer.', url: '#' }
@@ -298,43 +315,70 @@
         let shuffleMode = false;
         let repeatMode = false; // 0=off, 1=all, 2=one
         let playHistory = [];
-        let filteredTrackIds = [];
+        let filteredTrackIds = []; // kept for small subsets (favorites/search), but virtual nav used for large sets
 
-        // Generate 100 tracks
-        function generateTracks() {
-            for (let i = 1; i <= 100; i++) {
-                const genre = genres[(i - 1) % genres.length];
-                const artist = `${artistPrefixes[i % artistPrefixes.length]} ${['Sound', 'Labs', 'Project', 'Collective', 'Wave'][i % 5]}`;
-                const title = `${trackAdjectives[i % trackAdjectives.length]} ${trackNouns[(i * 3) % trackNouns.length]} #${i}`;
-                const durationSecs = 180 + (i * 7) % 150; // Between 3 to 5.5 mins
-                const minutes = Math.floor(durationSecs / 60);
-                const seconds = durationSecs % 60;
-                const durationFormatted = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-                const fileSize = (3.5 + (i % 4) * 1.2).toFixed(1) + ' MB';
-                const bitrate = [192, 256, 320][i % 3] + ' kbps';
-
-                // Use reliable free audio samples for preview
-                const sampleAudios = [
-                    'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-                    'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-                    'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-                    'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'
-                ];
-
-                tracks.push({
-                    id: i,
-                    title: title,
-                    artist: artist,
-                    genre: genre,
-                    duration: durationFormatted,
-                    fileSize: fileSize,
-                    bitrate: bitrate,
-                    audioUrl: sampleAudios[i % sampleAudios.length]
-                });
-            }
+        // Deterministic virtual track generator - O(1) per id, no array storage
+        const sampleAudios = [
+            'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+            'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+            'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+            'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'
+        ];
+        function getTrack(id){
+            if(id < 1 || id > TOTAL_TRACKS) return null;
+            const genre = GENRES[(id - 1) % GENRES.length];
+            const artist = `${artistPrefixes[id % artistPrefixes.length]} ${artistSuffixes[id % artistSuffixes.length]}`;
+            const title = `${trackAdjectives[id % trackAdjectives.length]} ${trackNouns[(id * 7) % trackNouns.length]} #${id}`;
+            const durationSecs = 120 + (id * 13) % 300; // 2-7 mins
+            const minutes = Math.floor(durationSecs / 60);
+            const seconds = durationSecs % 60;
+            const durationFormatted = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            const fileSize = (2.5 + (id % 6) * 1.5).toFixed(1) + ' MB';
+            const bitrate = [128, 192, 256, 320][id % 4] + ' kbps';
+            const isSynth = id > 100;
+            return {
+                id,
+                title,
+                artist,
+                genre,
+                duration: durationFormatted,
+                durationSecs,
+                fileSize,
+                bitrate,
+                audioUrl: isSynth ? null : sampleAudios[id % sampleAudios.length],
+                isSynth
+            };
         }
+        // Compatibility shim: virtual 'tracks' object to avoid breaking external references
+        // Supports .length, .find, .filter (batched), .map, .push (no-op for 10M)
+        const tracks = new Proxy([], {
+            get(target, prop){
+                if(prop === 'length') return TOTAL_TRACKS;
+                if(prop === 'find') return (fn) => { for(let i=1;i<=TOTAL_TRACKS;i++){ const t=getTrack(i); if(fn(t,i)) return t; if(i>500000 && !searchQuery && currentGenre==='All') break; } return null; };
+                if(prop === 'push') return (...args)=>{ /* legacy generateInfiniteTracks uses push, now routed to virtual total */ return TOTAL_TRACKS; };
+                if(prop === 'map') return (fn)=>{ const out=[]; for(let i=1;i<=Math.min(1000,TOTAL_TRACKS);i++) out.push(fn(getTrack(i),i)); return out; };
+                if(prop === 'filter') return (fn)=>{ const out=[]; for(let i=1;i<=TOTAL_TRACKS;i++){ const t=getTrack(i); if(fn(t)) out.push(t); if(out.length>=5000) break; } return out; };
+                return target[prop];
+            }
+        });
 
-        generateTracks();
+        function matchesFilter(track){
+            if(currentGenre === 'Favorites') return favorites.has(track.id);
+            if(currentGenre !== 'All' && track.genre !== currentGenre) return false;
+            if(!searchQuery) return true;
+            const q = searchQuery.toLowerCase();
+            return track.title.toLowerCase().includes(q) || track.artist.toLowerCase().includes(q) || track.genre.toLowerCase().includes(q);
+        }
+        // Fast count for non-search cases
+        function computeFilteredTotalSync(){
+            if(searchQuery){
+                // For search we defer async count; return estimate for instant UI
+                return filteredTotal;
+            }
+            if(currentGenre === 'All') return TOTAL_TRACKS;
+            if(currentGenre === 'Favorites') return favorites.size;
+            return Math.floor(TOTAL_TRACKS / GENRES.length) + (GENRES.indexOf(currentGenre) < (TOTAL_TRACKS % GENRES.length) ? 1 : 0);
+        }
 
         // Web Audio Synth Engine for procedural voice-like audio
         let audioCtx = null;
@@ -487,8 +531,8 @@
             if (repeatMode === 2) {
                 // Repeat One
                 playTrack(currentPlayingTrackId);
-            } else if (repeatMode === 1 || filteredTrackIds.length > 1) {
-                // Repeat All or normal playlist
+            } else if (repeatMode === 1 || filteredTotal > 1) {
+                // Repeat All or normal playlist - virtual
                 playNext();
             } else {
                 // Stop at end
@@ -498,99 +542,214 @@
             }
         }
 
-        // Generate infinite tracks (up to 10M metadata entries)
+        // Generate infinite tracks - virtual 10M already present, keep API compatible
         function generateInfiniteTracks(count = 10000) {
-            const btn = event.target.closest('button');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Generating...</span>';
-            btn.disabled = true;
-            lucide.createIcons();
-
-            // Use requestAnimationFrame batches to avoid blocking UI
-            const batchSize = 500;
-            let generated = tracks.length;
-            const targetTotal = Math.min(generated + count, 10000000);
-
-            const genres = ['Electronic', 'Ambient', 'Lo-Fi', 'Synthwave', 'Cinematic', 'Acoustic', 'Vocal', 'Experimental', 'Drone', 'Psybient'];
-            const artistPrefixes = ['Aether', 'Neon', 'Quantum', 'Solar', 'Echo', 'Cyber', 'Astral', 'Horizon', 'Vortex', 'Krypton', 'Lunar', 'Solaris', 'Nebula', 'Prism', 'Vertex'];
-            const trackAdjectives = ['Midnight', 'Golden', 'Infinite', 'Forgotten', 'Electric', 'Silent', 'Cosmic', 'Stellar', 'Prismatic', 'Neo', 'Void', 'Ethereal', 'Radiant', 'Obsidian', 'Luminous'];
-            const trackNouns = ['Pulse', 'Horizon', 'Memory', 'Wave', 'Journey', 'Echo', 'Spectrum', 'Gravity', 'State', 'Dream', 'Signal', 'Flux', 'Resonance', 'Vector', 'Field'];
-
-            function batch() {
-                const end = Math.min(generated + batchSize, targetTotal);
-                for (let i = generated + 1; i <= end; i++) {
-                    const genre = genres[(i - 1) % genres.length];
-                    const artist = `${artistPrefixes[i % artistPrefixes.length]} ${['Sound', 'Labs', 'Project', 'Collective', 'Wave', 'Systems', 'Dynamics', 'Fields'][i % 8]}`;
-                    const title = `${trackAdjectives[i % trackAdjectives.length]} ${trackNouns[(i * 7) % trackNouns.length]} #${i}`;
-                    const durationSecs = 120 + (i * 13) % 300; // 2-7 mins
-                    const minutes = Math.floor(durationSecs / 60);
-                    const seconds = durationSecs % 60;
-                    const durationFormatted = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-                    const fileSize = (2.5 + (i % 6) * 1.5).toFixed(1) + ' MB';
-                    const bitrate = [128, 192, 256, 320][i % 4] + ' kbps';
-
-                    tracks.push({
-                        id: i,
-                        title: title,
-                        artist: artist,
-                        genre: genre,
-                        duration: durationFormatted,
-                        durationSecs: durationSecs,
-                        fileSize: fileSize,
-                        bitrate: bitrate,
-                        isSynth: true // Mark as procedural
-                    });
-                }
-                generated = end;
-
-                if (generated < targetTotal) {
-                    requestAnimationFrame(batch);
-                } else {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    lucide.createIcons();
-                    renderTracks();
-                    alert(`Generated ${targetTotal - tracks.length + generated} new tracks! Total: ${tracks.length.toLocaleString()}`);
-                }
+            // Catalog is already virtual 10M - no array push, just UX feedback
+            const btn = event?.target?.closest?.('button');
+            if (btn){
+                const original = btn.innerHTML;
+                btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>10M Ready</span>';
+                lucide.createIcons();
+                setTimeout(()=>{ btn.innerHTML = original; lucide.createIcons(); }, 1200);
             }
-
-            requestAnimationFrame(batch);
+            // If already at 10M, just refresh view and notify
+            currentPage = 1;
+            renderTracks();
+            // Non-blocking toast via alert (preserve original behavior) but indicate virtual
+            setTimeout(()=> alert(`Haven Vault already virtualized to ${TOTAL_TRACKS.toLocaleString()} tracks!\\nNo DOM bloat — tracks are generated procedurally O(1) per ID.\\nUse search/filters + pagination to browse.`), 100);
         }
 
-        // Render Track List
+        // Pagination helpers
+        function totalPages(){
+            const total = filteredTotal;
+            return Math.max(1, Math.ceil(total / PAGE_SIZE));
+        }
+        function goToPage(p){
+            const tp = totalPages();
+            if(p < 1) p = 1;
+            if(p > tp) p = tp;
+            if(p === currentPage) return;
+            currentPage = p;
+            renderTracks();
+            document.getElementById('trackListContainer').scrollTop = 0;
+        }
+        function jumpToPage(){
+            const v = parseInt(document.getElementById('pageJumpInput').value,10);
+            if(!isNaN(v)) goToPage(v);
+        }
+        function updatePaginationUI(){
+            const tp = totalPages();
+            document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${tp.toLocaleString()} • ${filteredTotal.toLocaleString()} matches • ${PAGE_SIZE} / page`;
+            document.getElementById('prevPageBtn').disabled = currentPage <= 1;
+            document.getElementById('nextPageBtn').disabled = currentPage >= tp;
+            document.getElementById('pageJumpInput').max = tp;
+            document.getElementById('pageJumpInput').placeholder = `1-${tp}`;
+        }
+
+        // Virtual slice builders - no 10M array scan for common cases
+        function getVirtualSlice(){
+            // Fast paths: no search
+            if(!searchQuery){
+                if(currentGenre === 'All'){
+                    filteredTotal = TOTAL_TRACKS;
+                    const start = (currentPage-1)*PAGE_SIZE + 1;
+                    const end = Math.min(start+PAGE_SIZE-1, TOTAL_TRACKS);
+                    const slice=[];
+                    for(let id=start; id<=end; id++) slice.push(getTrack(id));
+                    return slice;
+                }
+                if(currentGenre === 'Favorites'){
+                    const favArr = Array.from(favorites).sort((a,b)=>a-b);
+                    filteredTotal = favArr.length;
+                    const startIdx = (currentPage-1)*PAGE_SIZE;
+                    const pageIds = favArr.slice(startIdx, startIdx+PAGE_SIZE);
+                    return pageIds.map(id=>getTrack(id));
+                }
+                // Single genre - arithmetic progression
+                const gIdx = GENRES.indexOf(currentGenre);
+                if(gIdx !== -1){
+                    const countForGenre = Math.floor(TOTAL_TRACKS / GENRES.length) + (gIdx < (TOTAL_TRACKS % GENRES.length) ? 1 : 0);
+                    filteredTotal = countForGenre;
+                    const startN = (currentPage-1)*PAGE_SIZE;
+                    const slice=[];
+                    for(let n=startN; n< startN+PAGE_SIZE && n < countForGenre; n++){
+                        const id = gIdx + 1 + n*GENRES.length;
+                        slice.push(getTrack(id));
+                    }
+                    return slice;
+                }
+            }
+            // Search or fallback: need scan - but only enough to fill current page + estimate total
+            // Strategy: scan incrementally; collect for current page, and update filteredTotal asynchronously if needed
+            const startSkip = (currentPage-1)*PAGE_SIZE;
+            const slice=[];
+            let matched = 0;
+            // For pagination total, if we already have a cached filteredTotal for this query/genre we reuse
+            // Otherwise we will scan fully in background (chunked) after rendering this page
+            for(let id=1; id<=TOTAL_TRACKS; id++){
+                const t = getTrack(id);
+                if(!matchesFilter(t)) continue;
+                if(matched >= startSkip && slice.length < PAGE_SIZE){
+                    slice.push(t);
+                }
+                matched++;
+                // Early exit if we have filled page and we are not counting total synchronously
+                // We break only after finding slice full AND we have an estimate for total
+                // To keep UI snappy, stop scanning for slice after we collect PAGE_SIZE
+                if(slice.length >= PAGE_SIZE){
+                    // Don't break total counting if searchQuery active and total not yet known precisely
+                    // But we still break for responsiveness and schedule async count
+                    break;
+                }
+            }
+            // If we broke early, filteredTotal is still pending - schedule async full count
+            if(slice.length >= PAGE_SIZE || matched < filteredTotal){
+                // Trigger async recount without blocking
+                scheduleAsyncCount();
+            } else {
+                // We scanned all and know exact matched
+                filteredTotal = matched;
+            }
+            // If no results and we broke early due to empty, need to know if truly zero - handled by async
+            return slice;
+        }
+
+        let asyncCountToken = 0;
+        function scheduleAsyncCount(){
+            const token = ++asyncCountToken;
+            const q = searchQuery;
+            const g = currentGenre;
+            // Chunked scan via requestAnimationFrame to avoid blocking
+            let count = 0;
+            let id = 1;
+            const chunk = 80000;
+            function pump(){
+                if(token !== asyncCountToken) return;
+                if(q !== searchQuery || g !== currentGenre) return;
+                const end = Math.min(id + chunk - 1, TOTAL_TRACKS);
+                for(; id <= end; id++){
+                    const t = getTrack(id);
+                    // inline matchesFilter for speed
+                    if(g === 'Favorites'){ if(!favorites.has(t.id)) continue; } else if(g !== 'All' && t.genre !== g) continue;
+                    if(q){ const lq=q.toLowerCase(); if(!t.title.toLowerCase().includes(lq) && !t.artist.toLowerCase().includes(lq) && !t.genre.toLowerCase().includes(lq)) continue; }
+                    count++;
+                }
+                if(id <= TOTAL_TRACKS){
+                    requestAnimationFrame(pump);
+                } else {
+                    if(token !== asyncCountToken) return;
+                    filteredTotal = count;
+                    // Update UI displays without full re-render if page still same
+                    document.getElementById('trackCountDisplay').innerText = `Showing ${Math.min(PAGE_SIZE, count)} of ${count.toLocaleString()} tracks (page ${currentPage})`;
+                    updatePaginationUI();
+                }
+            }
+            requestAnimationFrame(pump);
+        }
+
+        // Render Track List - VIRTUALIZED (keeps layout identical, only renders PAGE_SIZE rows)
         function renderTracks() {
             const container = document.getElementById('trackListContainer');
             container.innerHTML = '';
 
-            const filtered = tracks.filter(t => {
-                const matchesGenre = currentGenre === 'All' || 
-                                    (currentGenre === 'Favorites' && favorites.has(t.id)) ||
-                                    t.genre === currentGenre;
-                const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                      t.artist.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                      t.genre.toLowerCase().includes(searchQuery.toLowerCase());
-                return matchesGenre && matchesSearch;
-            });
+            // Update header stats (layout unchanged)
+            document.getElementById('catalogSize').innerText = `${TOTAL_TRACKS.toLocaleString()} Tracks`;
+            document.getElementById('maxTrackId').innerText = TOTAL_TRACKS.toLocaleString();
 
-            document.getElementById('trackCountDisplay').innerText = `Showing ${filtered.length} of ${tracks.length.toLocaleString()} tracks`;
-            document.getElementById('catalogSize').innerText = `${tracks.length.toLocaleString()} Tracks`;
-            document.getElementById('maxTrackId').innerText = tracks.length;
+            // Compute slice virtually
+            let slice;
+            let isEmpty = false;
+            if(!searchQuery && (currentGenre === 'All' || GENRES.includes(currentGenre))){
+                slice = getVirtualSlice();
+                isEmpty = slice.length === 0;
+            } else if(currentGenre === 'Favorites' && !searchQuery){
+                slice = getVirtualSlice();
+                isEmpty = slice.length === 0 && favorites.size===0;
+            } else {
+                slice = getVirtualSlice();
+                // slice may be partial due to early break; empty check needs async but show what we have
+                isEmpty = slice.length === 0;
+                // If search active, kick off accurate counts
+                if(searchQuery) {
+                    // filteredTotal already scheduled
+                }
+            }
 
-            // Update filtered track IDs for navigation
-            filteredTrackIds = filtered.map(t => t.id);
+            // For non-search cases we know exact filteredTotal immediately
+            if(!searchQuery){
+                filteredTotal = computeFilteredTotalSync();
+            }
 
-            if (filtered.length === 0) {
+            // Update count display - show pagination-aware text
+            const startNum = filteredTotal===0 ? 0 : (currentPage-1)*PAGE_SIZE + 1;
+            const endNum = Math.min(currentPage*PAGE_SIZE, filteredTotal);
+            if(filteredTotal === 0){
+                document.getElementById('trackCountDisplay').innerText = `Showing 0 tracks`;
+            } else if(!searchQuery){
+                document.getElementById('trackCountDisplay').innerText = `Showing ${startNum.toLocaleString()}-${endNum.toLocaleString()} of ${filteredTotal.toLocaleString()} tracks`;
+            } else {
+                // For search, show at least slice length and estimated total (will update async)
+                document.getElementById('trackCountDisplay').innerText = `Showing ${slice.length} of ${filteredTotal.toLocaleString()} tracks (page ${currentPage})`;
+            }
+            updatePaginationUI();
+
+            // Maintain compatibility for playNext/Prev which previously used filteredTrackIds array
+            // We keep a small window of ids for current page navigation; full navigation uses virtual scan
+            filteredTrackIds = slice.map(t=>t.id);
+
+            if (isEmpty) {
                 container.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-16 text-slate-400">
                         <i data-lucide="search-x" class="w-12 h-12 mb-2 text-slate-300"></i>
                         <p class="font-semibold text-sm">No audio tracks matched your query.</p>
+                        <p class="text-xs mt-1">Try page 1 or clear filters — catalog holds ${TOTAL_TRACKS.toLocaleString()} virtual tracks.</p>
                     </div>
                 `;
                 lucide.createIcons();
                 return;
             }
 
-            filtered.forEach(track => {
+            slice.forEach(track => {
                 const isCurrent = currentPlayingTrackId === track.id;
                 const row = document.createElement('div');
                 row.className = `flex items-center justify-between p-3.5 rounded-xl transition-all border ${isCurrent ? 'bg-blue-50/80 border-blue-200 shadow-sm' : 'hover:bg-slate-50 border-transparent'} group`;
@@ -627,14 +786,19 @@
             lucide.createIcons();
         }
 
-        // Search & Filter
+        // Search & Filter - debounced for 10M virtual scan
+        let filterDebounce = null;
         function filterTracks() {
             searchQuery = document.getElementById('searchInput').value;
-            renderTracks();
+            currentPage = 1;
+            if(filterDebounce) clearTimeout(filterDebounce);
+            // Small debounce to avoid scanning 10M on every keystroke
+            filterDebounce = setTimeout(()=> renderTracks(), 250);
         }
 
         function setGenre(genre) {
             currentGenre = genre;
+            currentPage = 1;
             document.querySelectorAll('.genre-btn').forEach(btn => {
                 const isActive = (genre === 'All' && btn.innerText.includes('All')) ||
                                  (genre === 'Favorites' && btn.id === 'favFilterBtn') ||
@@ -655,14 +819,58 @@
             } else {
                 favorites.add(id);
             }
+            // If viewing Favorites, reset pagination may be needed
+            if(currentGenre === 'Favorites' && currentPage > totalPages()) currentPage = Math.max(1, totalPages());
             renderTracks();
         }
 
-        // Audio Player Controls
+        // Audio Player Controls - virtualized
         let synthPlayer = null;
 
+        // Virtual navigation helpers for 10M without storing filteredTrackIds fully
+        function findNextMatchId(fromId, dir=1){
+            let id = fromId + dir;
+            let steps = 0;
+            while(id >=1 && id <= TOTAL_TRACKS && steps < TOTAL_TRACKS){
+                const t = getTrack(id);
+                if(matchesFilter(t)) return id;
+                id += dir;
+                steps++;
+                // For single-genre fast path, jump by GENRES.length to avoid scanning 9/10 misses
+                if(!searchQuery && currentGenre !== 'All' && currentGenre !== 'Favorites' && GENRES.includes(currentGenre)){
+                    // Already handled by step 1, but we can keep simple scan - 10M worst still okay for one step (max 10 checks)
+                }
+            }
+            // Wrap around
+            if(dir===1){
+                for(let i=1;i<fromId;i++){ const t=getTrack(i); if(matchesFilter(t)) return i; }
+            } else {
+                for(let i=TOTAL_TRACKS;i>fromId;i--){ const t=getTrack(i); if(matchesFilter(t)) return i; }
+            }
+            return fromId;
+        }
+        function findRandomMatchId(){
+            if(!searchQuery && currentGenre === 'All') return 1 + Math.floor(Math.random()*TOTAL_TRACKS);
+            if(!searchQuery && GENRES.includes(currentGenre)){
+                const gIdx = GENRES.indexOf(currentGenre);
+                const n = Math.floor(Math.random()* filteredTotal);
+                return gIdx+1 + n*GENRES.length;
+            }
+            if(currentGenre === 'Favorites' && favorites.size>0){
+                const arr = Array.from(favorites); return arr[Math.floor(Math.random()*arr.length)];
+            }
+            // Search case: sample random until match (with cap)
+            for(let tries=0; tries<2000; tries++){
+                const id = 1+Math.floor(Math.random()*TOTAL_TRACKS);
+                if(matchesFilter(getTrack(id))) return id;
+            }
+            // fallback scan
+            for(let i=1;i<=TOTAL_TRACKS;i++) if(matchesFilter(getTrack(i))) return i;
+            return 1;
+        }
+
         function playTrack(id) {
-            const track = tracks.find(t => t.id === id);
+            const track = getTrack(id);
             if (!track) return;
 
             if (currentPlayingTrackId === id) {
@@ -710,28 +918,52 @@
         }
 
         function getCurrentIndex() {
+            // Virtual: index within current page window, not global 10M
             return filteredTrackIds.indexOf(currentPlayingTrackId);
         }
 
         function playNext() {
-            if (filteredTrackIds.length === 0) return;
-            let idx = getCurrentIndex();
-            if (idx === -1) idx = 0;
-            
+            if(filteredTotal===0) return;
             if (shuffleMode) {
-                idx = Math.floor(Math.random() * filteredTrackIds.length);
-            } else {
-                idx = (idx + 1) % filteredTrackIds.length;
+                const rid = findRandomMatchId();
+                playTrack(rid);
+                return;
             }
-            playTrack(filteredTrackIds[idx]);
+            // If current track not in filtered set, jump to first of current page
+            if(currentPlayingTrackId===null || !matchesFilter(getTrack(currentPlayingTrackId))){
+                if(filteredTrackIds.length>0) playTrack(filteredTrackIds[0]);
+                else playTrack(findRandomMatchId());
+                return;
+            }
+            // Try within current rendered page first
+            let idx = getCurrentIndex();
+            if(idx !== -1 && idx+1 < filteredTrackIds.length){
+                playTrack(filteredTrackIds[idx+1]);
+                return;
+            }
+            // Otherwise virtual scan to next match globally (handles pagination boundaries)
+            const nextId = findNextMatchId(currentPlayingTrackId, 1);
+            playTrack(nextId);
         }
 
         function playPrev() {
-            if (filteredTrackIds.length === 0) return;
+            if(filteredTotal===0) return;
+            if(shuffleMode){
+                playTrack(findRandomMatchId());
+                return;
+            }
+            if(currentPlayingTrackId===null || !matchesFilter(getTrack(currentPlayingTrackId))){
+                if(filteredTrackIds.length>0) playTrack(filteredTrackIds[filteredTrackIds.length-1]);
+                else playTrack(findRandomMatchId());
+                return;
+            }
             let idx = getCurrentIndex();
-            if (idx <= 0) idx = filteredTrackIds.length - 1;
-            else idx = idx - 1;
-            playTrack(filteredTrackIds[idx]);
+            if(idx > 0){
+                playTrack(filteredTrackIds[idx-1]);
+                return;
+            }
+            const prevId = findNextMatchId(currentPlayingTrackId, -1);
+            playTrack(prevId);
         }
 
         function toggleShuffle() {
@@ -760,11 +992,19 @@
         }
 
         function exportCatalog() {
+            // For 10M, exporting all would be >1GB. Export current filtered page + metadata instead.
+            const slice = getVirtualSlice();
             const data = {
-                version: '3.4',
+                version: '3.4-virtual-10M',
                 generated: new Date().toISOString(),
-                totalTracks: tracks.length,
-                tracks: tracks.map(t => ({
+                totalTracks: TOTAL_TRACKS,
+                filteredTotal: filteredTotal,
+                currentPage: currentPage,
+                pageSize: PAGE_SIZE,
+                currentGenre: currentGenre,
+                searchQuery: searchQuery,
+                note: 'Full 10M catalog is virtual/procedural. This export contains current page only. Reconstruct any track via getTrack(id) deterministically.',
+                tracks: slice.map(t => ({
                     id: t.id,
                     title: t.title,
                     artist: t.artist,
@@ -780,7 +1020,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `haven-loader-catalog-${tracks.length}-tracks.json`;
+            a.download = `haven-loader-catalog-page${currentPage}-${slice.length}-of-${TOTAL_TRACKS}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -849,10 +1089,12 @@
 
         function togglePlay() {
             if (!currentPlayingTrackId) {
-                playTrack(filteredTrackIds[0] || 1);
+                if(filteredTrackIds.length>0) playTrack(filteredTrackIds[0]);
+                else if(filteredTotal>0) playTrack(findRandomMatchId());
+                else playTrack(1);
                 return;
             }
-            const track = tracks.find(t => t.id === currentPlayingTrackId);
+            const track = getTrack(currentPlayingTrackId);
             if (isPlaying) {
                 if (track?.isSynth && synthPlayer) {
                     synthPlayer.stop();
@@ -890,7 +1132,7 @@
         });
 
         currentAudio.addEventListener('timeupdate', () => {
-            const track = tracks.find(t => t.id === currentPlayingTrackId);
+            const track = currentPlayingTrackId ? getTrack(currentPlayingTrackId) : null;
             if (track?.isSynth) return; // Synth tracks don't emit timeupdate
             
             if (currentAudio.duration) {
@@ -908,7 +1150,7 @@
         });
 
         document.getElementById('progressBar').addEventListener('input', (e) => {
-            const track = tracks.find(t => t.id === currentPlayingTrackId);
+            const track = currentPlayingTrackId ? getTrack(currentPlayingTrackId) : null;
             if (track?.isSynth) return;
             if (currentAudio.duration) {
                 currentAudio.currentTime = (e.target.value / 100) * currentAudio.duration;
@@ -946,7 +1188,7 @@
 
         // Reward Ad Download Flow
         function triggerRewardAd(id) {
-            activeTrackForDownload = tracks.find(t => t.id === id);
+            activeTrackForDownload = getTrack(id);
             if (!activeTrackForDownload) return;
 
             // Pick random ad
